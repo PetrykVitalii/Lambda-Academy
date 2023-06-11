@@ -6,21 +6,23 @@ const mainPath = 'Instagram/2kk_words_400x400'
 
 const files = fs.readdirSync(mainPath);
 
-const getData = () => {
-  const groupedData = files.reduce((acc, file) => {
-    const allFileContents = fs.readFileSync(`${mainPath}/${file}`, 'utf-8');
-    const wordsArr = allFileContents.split('\n')
-
-    wordsArr.forEach((word) => {
-      if (acc[word] && acc[word][file]) {
-        acc[word][file] += 1
-        return
-      }
-      acc[word] = {
-        ...acc[word],
-        [file]: 1
-      }
+const getData = async () => {
+  const mappedFiles = files.map((file) => new Promise((resolve, reject) => {
+    fs.readFile(`${mainPath}/${file}`, 'utf-8', (err, data) => { 
+        const wordsArr = data.split('\n')
+        resolve([...new Set(wordsArr)])
     })
+  }))
+
+  const allWords = (await Promise.all(mappedFiles)).flat()
+  
+  const groupedData = allWords.reduce((acc, word) => {
+    if (acc[word]) {
+      acc[word] += 1
+      return acc;
+    }
+
+    acc[word] = 1
 
     return acc
   }, {})
@@ -30,15 +32,23 @@ const getData = () => {
 
 const uniqueValues = (data) => Object.keys(data).length
 
-const existInAllFiles = (data) => Object.values(data).filter((keys) => Object.keys(keys).length === files.length).length
+const existInAllFiles = (data) => Object.values(data).filter((value) => value === files.length).length
 
-const existInAtLeastTen = (data) => Object.values(data).filter((keys) => Object.keys(keys).length >= 10).length
+const existInAtLeastTen = (data) => Object.values(data).filter((value) => value >= 10).length
 
-const groupedData = getData()
 
-console.log(uniqueValues(groupedData), 'uniqueValues');
-console.log(existInAllFiles(groupedData), 'existInAllFiles');
-console.log(existInAtLeastTen(groupedData), 'existInAtLeastTen');
+const showResult = async () => {
+  const groupedData = await getData()
 
-console.timeEnd('time');
+  console.log(uniqueValues(groupedData), 'uniqueValues');
+  console.log(existInAllFiles(groupedData), 'existInAllFiles');
+  console.log(existInAtLeastTen(groupedData), 'existInAtLeastTen');
+
+  console.timeEnd('time');
+}
+
+showResult()
+
+
+
 
